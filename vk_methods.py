@@ -15,9 +15,16 @@ class VkMethods:
     def load_config_from_json():
         return json.load(open('config.json'))
 
-    def WallPost(self, Message: str, PhotoPaths: list = None):
+    def WallPost(self, Message: str, PhotoPaths: list = None, VideoPaths: list = None):
         BoxPhotoLink = []
+        BoxVideoLink = []
         PhotoLink = None
+        params = {'access_token': self.access_token,
+                  'owner_id': -self.group_id,
+                  'from_group': 1,
+                  'message': Message,
+                  'v': self.v}
+
         if PhotoPaths:
             response = requests.get('https://api.vk.com/method/photos.getWallUploadServer',
                                     params={'access_token': self.access_token, 'group_id': self.group_id, 'v': self.v})
@@ -39,21 +46,34 @@ class VkMethods:
                 BoxPhotoLink.append(photoLink)
 
             PhotoLink = ",".join(BoxPhotoLink)
-        # # Формируем параметры для размещения картинки в группе и публикуем её
-        if PhotoPaths:
             params = {'access_token': self.access_token,
                       'owner_id': -self.group_id,
                       'from_group': 1,
                       'message': Message,
                       'attachments': PhotoLink,
                       'v': self.v}
-        else:
+        if VideoPaths:
+            for Path in VideoPaths:
+                response = requests.get('https://api.vk.com/method/video.save',
+                                        params={'access_token': self.access_token, 'group_id': self.group_id, 'v': self.v})
+                upload_url = response.json()['response']['upload_url']
+                video_id = requests.post(
+                    upload_url, files={'video': open(Path, "rb")})
+
+                video_owner_id = str(
+                    video_id.json()['owner_id'])
+                video_id = str(video_id.json()['video_id'])
+                videoLink = 'video' + video_owner_id + '_' + video_id
+                BoxVideoLink.append(videoLink)
+
+            VideoLink = ",".join(BoxVideoLink)
+
             params = {'access_token': self.access_token,
                       'owner_id': -self.group_id,
                       'from_group': 1,
                       'message': Message,
+                      'attachments': VideoLink,
                       'v': self.v}
 
         res = requests.get('https://api.vk.com/method/wall.post', params)
-        print(res.json())
         return res.json()
