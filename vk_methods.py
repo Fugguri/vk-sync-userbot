@@ -76,4 +76,5 @@ class VkMethods:
                       'v': self.v}
 
         res = requests.get('https://api.vk.com/method/wall.post', params)
+        print(res.json())
         return res.json()
